@@ -87,6 +87,15 @@ class DataService:
             with open(file_path, 'r') as input_file:
                 return json.load(input_file)
 
+
+    def get_bi_cluster(self,m_id, nc):
+        bi_cluster_json = self.config[m_id]['bi_cluster_file'][str(nc)]
+        with open(bi_cluster_json, 'r') as input_file:
+            return json.load(input_file)
+
+
+
+
     def get_and_save_feature_stats(self, m_id):
         """
         save units statistics to file, to accelerate reading data, filepath:./data/GRU_1-units_stats.json
@@ -145,6 +154,7 @@ class DataService:
         sub_df = df[features + ['time','seconds']]
         dict_list = df2dict(sub_df)
         return dict_list
+
     # def get_map(self, station_id):
     #     map_path = None
     #     for obj in self.station_config:

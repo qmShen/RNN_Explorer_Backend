@@ -60,8 +60,13 @@ def get_feature_stats_data():
 @app.route('/all_stats',  methods = ['POST'])
 def get_stats_data():
     post_data = json.loads(request.data.decode())
-    print('Get feature statistics',post_data)
-    return dataService.get_feature_stats(post_data['mid'])
+    print('Get all statistics',post_data)
+    return json.dumps({
+        'features': dataService.get_feature_stats(post_data['mid']),
+        'units': dataService.get_units_stats(post_data['mid']),
+        'bicluster':dataService.get_bi_cluster(post_data['mid'],post_data['nc'])
+    })
+
 
 
 @app.route('/cell_input_output',  methods = ['POST'])
