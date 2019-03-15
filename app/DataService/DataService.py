@@ -2,16 +2,25 @@
 import time
 import json
 from pymongo import MongoClient
-import pymongo
+import os
+import pandas as pd
+import numpy as np
+
 HOST = '127.0.0.1'
 PORT = 27017
-DB = 'mapping'
+DB = 'XRNN'
 
 class DataService:
     def __init__(self, configPath):
         pass
 
-        # self.client = MongoClient(HOST, PORT)
+        self.client = MongoClient(HOST, PORT)
+        self.config = self.read_config()
+
+        """
+        Hard code
+        """
+
         # self.db = self.client[DB]
         # if configPath == None:
         #     return
@@ -19,23 +28,123 @@ class DataService:
         # self.init_config()
 
 
-    # def init_config(self):
-    #     with open(self.config_path, 'r') as configFile:
-    #         schemaString = configFile.readline()
-    #         schemas = schemaString.split(',')
-    #         schemas = [e.strip() for e in schemas]
-    #         line = configFile.readline()
-    #         self.station_config = []
-    #         while line:
-    #             elements = [e.strip() for e in line.split(',')]
-    #             station_obj = {}
-    #             for i in range(len(schemas)):
-    #                 station_obj[schemas[i]] = elements[i]
-    #             self.station_config.append(station_obj)
-    #
-    #             line = configFile.readline()
-    #         # print('sttion', self.station_config)
-    #
+    def read_config(self):
+        with open('./config/config.json', 'r') as input_file:
+            config_json = json.load(input_file)
+            return config_json
+
+    def get_units_stats(self, m_id, db = False):
+        """
+        Read units status, filepath:./data/GRU_1-units_stats.json
+        :param m_id: the id of model
+        :param db: if collect data from database(MongoDB)
+        :return: all the statistics
+        """
+        file_path = './data/{}-{}.json'.format(m_id, 'units_stats')
+        if (not os.path.exists(file_path)) or db == True:
+            print('d')
+            stats_c_name = self.config[m_id]['unit_stats_collection']
+            db_name = self.config[m_id]['database']
+            collection = MongoClient('127.0.0.1', 27017)[db_name][stats_c_name]
+            stats_c_records = list(collection.find({},{'_id': 0}))
+            return stats_c_records
+        else:
+            print('f')
+            with open(file_path, 'r') as input_file:
+                return json.load(input_file)
+
+    def get_and_save_units_stats(self, m_id):
+        """
+        save units statistics to file, to accelerate reading data, filepath:./data/GRU_1-units_stats.json
+        :param m_id: model id
+        :return: no return, save data to file
+        """
+        stats_c_name = self.config[m_id]['unit_stats_collection']
+        db_name = self.config[m_id]['database']
+        collection = MongoClient('127.0.0.1', 27017)[db_name][stats_c_name]
+        stats_c_records = list(collection.find({}, {'_id': 0}))
+        with open('./data/{}-{}.json'.format(m_id, 'units_stats'),'w') as output_file:
+            json.dump(stats_c_records, output_file)
+
+
+    def get_feature_stats(self, m_id, db = False):
+        """
+        Read units status, filepath:./data/GRU_1-units_stats.json
+        :param m_id: the id of model
+        :param db: if collect data from database(MongoDB)
+        :return: all the statistics
+        """
+        file_path = './data/{}-{}.json'.format(m_id, 'feature_stats')
+        if (not os.path.exists(file_path)) or db == True:
+            print('d')
+            stats_c_name = self.config[m_id]['feature_stats_collection']
+            db_name = self.config[m_id]['database']
+            collection = MongoClient('127.0.0.1', 27017)[db_name][stats_c_name]
+            stats_c_records = list(collection.find({},{'_id': 0}))
+            return stats_c_records
+        else:
+            print('f')
+            with open(file_path, 'r') as input_file:
+                return json.load(input_file)
+
+    def get_and_save_feature_stats(self, m_id):
+        """
+        save units statistics to file, to accelerate reading data, filepath:./data/GRU_1-units_stats.json
+        :param m_id: model id
+        :return: no return, save data to file
+        """
+
+        stats_c_name = self.config[m_id]['feature_stats_collection']
+        db_name = self.config[m_id]['database']
+        collection = MongoClient('127.0.0.1', 27017)[db_name][stats_c_name]
+        stats_c_records = list(collection.find({}, {'_id': 0}))
+
+        with open('./data/{}-{}.json'.format(m_id, 'feature_stats'),'w') as output_file:
+            json.dump(stats_c_records, output_file)
+
+
+    def get_gradient_and_io_data(self, m_id, t_ids):
+        """
+        save units statistics to file, to accelerate reading data, filepath:./data/GRU_1-units_stats.json
+        :param m_id: model id
+        :return: no return, save data to file
+        """
+        def read_gradient_stats(t_id):
+            with open("{}{}.json".format(gradient_folder, t_id), 'r') as output_file:
+                return json.load(output_file)
+
+        print('get_gradient_and_io_data')
+        gradient_folder = self.config[m_id]['gradient_stats_folder']
+
+        input_output_folder = self.config[m_id]['input_out_folder']
+
+        io_columns = pd.read_csv("{}column.csv".format(input_output_folder)).columns
+        input_output_list = []
+        gradient_stats_list = []
+        for t_id in t_ids:
+            io_data = np.load("{}{}.npy".format(input_output_folder, t_id))
+            input_output_list.append(io_data.tolist())
+            gradient_stats_list.append(read_gradient_stats(t_id))
+
+
+        return {
+            "input_output_list": input_output_list,
+            "gradient_stats_list": gradient_stats_list,
+            "column": list(io_columns)
+        }
+
+    def get_feature_values(self,m_id, features):
+
+        def df2dict(df):
+            index_2_dict = df.T.to_dict()
+            return [index_2_dict[index] for index in index_2_dict]
+
+
+        feature_values_csv = self.config[m_id]['feature_value_file']
+        df = pd.read_csv(feature_values_csv)
+        sub_df = df[features + ['time','seconds']]
+        dict_list = df2dict(sub_df)
+        return dict_list
     # def get_map(self, station_id):
     #     map_path = None
     #     for obj in self.station_config:
@@ -118,6 +227,8 @@ class DataService:
         with open('./data/MDS_input24_1.json', 'r') as input_file:
             data = json.load(input_file)
             return json.dumps(data)
+
+    # def get_distribution(self, c_name):
 
 if __name__ == '__main__':
     dataService = DataService(None)
