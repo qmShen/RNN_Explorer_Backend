@@ -5,6 +5,7 @@ from pymongo import MongoClient
 import os
 import pandas as pd
 import numpy as np
+from scipy import stats
 
 HOST = '127.0.0.1'
 PORT = 27017
@@ -16,7 +17,7 @@ class DataService:
 
         self.client = MongoClient(HOST, PORT)
         self.config = self.read_config()
-
+        self.io_stats_df = self.read_state_merge('GRU_1')
         """
         Hard code
         """
@@ -68,7 +69,7 @@ class DataService:
 
 
     def get_feature_stats(self, m_id, db = False):
-        """
+        """z
         Read units status, filepath:./data/GRU_1-units_stats.json
         :param m_id: the id of model
         :param db: if collect data from database(MongoDB)
@@ -142,7 +143,7 @@ class DataService:
             "column": list(io_columns)
         }
 
-    def get_feature_values(self,m_id, features):
+    def get_feature_values(self, m_id, features):
 
         def df2dict(df):
             index_2_dict = df.T.to_dict()
@@ -155,6 +156,105 @@ class DataService:
         dict_list = df2dict(sub_df)
         return dict_list
 
+    def read_state_merge(self, m_id):
+        start_time = time.time()
+        data_file = np.load(self.config[m_id]['io_state_merge_data'])
+        data_column = pd.read_csv(self.config[m_id]['io_state_merge_column']).columns
+        all_seq_df = pd.DataFrame(data_file, columns = data_column)
+        print(all_seq_df.shape, time.time() - start_time)
+        return all_seq_df
+
+
+
+    # ------------------------------------------------------------------#
+    def get_stats_of_subgroup_data_mulit_features(self, all_seq_df, feature_scales, r_len=50, dif_type='ks'):
+        def get_sample_points(value_range, num):
+            gap = (value_range[-1] - value_range[0]) / num
+            return [(r * gap + value_range[0]) for r in range(num + 1)]
+
+        def form_feature_stats_dict(df, describe_df, column, min_v=-1, max_v=1, gap_n=50):
+            try:
+                column_stats = describe_df[column]
+                feature_value_list = df[column]
+                kernel = stats.gaussian_kde(feature_value_list)
+                column_stats = dict(column_stats)
+                column_stats['kde_sample_points'] = get_sample_points([min_v, max_v], gap_n)
+                column_stats['kde_point'] = list(kernel(column_stats['kde_sample_points']).astype(float))
+                column_stats['uid'] = column.split('_')[-1]
+
+                num_freq = dict(
+                    ((feature_value_list - min_v) / ((max_v - min_v) / gap_n)).astype(int).value_counts().sort_index())
+                column_stats['distribution'] = [int(num_freq[i]) if i in num_freq else 0 for i in range(gap_n)]
+                return column_stats
+            except:
+                return None
+
+        def calculate_diff(seq1, seq2, dif_type='ks', seq1_des=None, seq2_des=None):
+            """
+            calculate the distribution difference of seq1 and seq2
+            dif_type = ks, mean, 50%
+            seq2 contains all data, seq1 contains filtering data
+            """
+            if dif_type == 'ks':
+                ks1 = stats.ks_2samp(seq1, seq2)
+                result = ks1.statistic
+            elif dif_type in ['mean', '50%', '25%', 'min', 'max', '75%']:
+                seq1_des = seq1.describe() if seq1_des is None else seq1_des
+                seq2_des = seq2.describe() if seq2_des is None else seq2_des
+                result = seq1_des[dif_type] - seq2_des[dif_type]
+
+            return result, dif_type
+
+        if set(all_seq_df.columns) <= set(feature_scales) != True:
+            print('Some feature not existed!')
+        output_df = all_seq_df.iloc[:, -100:]
+        condition = None
+        for i, f in enumerate(feature_scales):
+            min_val, max_val = feature_scales[f][0] / r_len, feature_scales[f][1] / r_len
+            if i == 0:
+                condition = (all_seq_df[f] > min_val) & (all_seq_df[f] < max_val)
+            else:
+                condition = condition & (all_seq_df[f] > min_val) & (all_seq_df[f] < max_val)
+
+        if condition is None:
+            return []
+        condition_output = output_df[condition]
+        # hard code
+        print(condition_output.shape, all_seq_df.shape)
+        lim_n = 10000
+        sub_df = output_df[condition].sample(n = lim_n if lim_n < condition_output.shape[0] else condition_output.shape[0])
+        # sub_df = output_df[condition]
+        sub_describe_df = sub_df.describe()
+
+        if sub_df.shape[0] == 0:
+            return []
+        # sub stats for all hidden units
+        sub_stats_list = []
+        start_time = time.time()
+
+        for column in sub_df.columns:
+            sub_stats = form_feature_stats_dict(sub_df, sub_describe_df, column=column)
+
+            all_se = output_df.sample(n = lim_n)[column]
+            # all_se = output_df[column]
+            sub_se = sub_df[column]
+            if sub_stats is not None:
+                dif, dif_type = calculate_diff(seq1=all_se, seq2=sub_se, dif_type=dif_type,
+                                               seq2_des=sub_describe_df[column])
+                sub_stats['dif'] = dif
+                sub_stats['dif_type'] = dif_type
+
+            sub_stats_list.append(sub_stats)
+            # calculate ks_test
+
+        print('inner', time.time() - start_time)
+
+        return sub_stats_list
+
+    def get_subgroup_statistics(self, feature_scales, r_len, dif_type = 'ks'):
+        result = self.get_stats_of_subgroup_data_mulit_features(self.io_stats_df, feature_scales, r_len = r_len, dif_type = dif_type)
+
+        return result
     # def get_map(self, station_id):
     #     map_path = None
     #     for obj in self.station_config:

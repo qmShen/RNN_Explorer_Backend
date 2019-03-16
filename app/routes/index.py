@@ -4,6 +4,9 @@ import json
 from app.DataService.DataService import DataService
 from flask import request
 
+import os
+cwd = os.getcwd()
+print("Test root path", cwd)
 
 dataService = DataService('config.txt')
 print('here')
@@ -82,6 +85,20 @@ def get_feature_values():
     print('Get feature values ',post_data)
     dicts = dataService.get_feature_values(post_data['mid'],post_data['features'])
     return json.dumps(dicts)
+
+@app.route('/subgroup_stats',  methods = ['POST'])
+def get_subgroup_stats():
+
+    post_data = json.loads(request.data.decode())
+    print('Get feature values ',post_data)
+    # feature_scales, r_len, dif_type
+    feature_scales = post_data['feature_scales']
+    r_len = 50
+    dif_type =  post_data['dif_type']
+    results = dataService.get_subgroup_statistics(feature_scales = feature_scales, r_len = r_len, dif_type = dif_type)
+    return json.dumps(results)
+
+
 # @app.route('/getLegendConfiguration',  methods = ['POST'])
 # def get_legend_config():
 #     post_data = json.loads(request.data.decode())

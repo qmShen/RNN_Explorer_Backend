@@ -1,0 +1,20 @@
+{
+    "GRU_1": {
+        "model_name": "KC_A_step_3_epoch_400_inputlen_24_output_dim_100_GRU_3Dense",
+        "path": "/data/XRNN/Extract_layers/target_models/KC_A_step_3_epoch_400_inputlen_24_output_dim_100_GRU_3Dense.hdf5",
+        "ks_test":"/data/XRNN/dev/important_data/ks_df.csv",
+        "id": "GRU_1",
+        "database": "XRNN",
+        "feature_stats_collection": "stat_GRU_1_feature",
+        "unit_stats_collection": "stat_GRU_1_unit",
+        "gradient_stats_folder": "./data/gradient_stats_GRU_1/",
+        "input_out_folder": "./data/input_out_GRU_1/",
+        "feature_value_file": "./data/station_KC_A_df_2018.csv",
+        "bi_cluster_file": {
+            "15": "./data/bi_cluster_GRU_1_nc_15.json",
+            "10": "./data/bi_cluster_GRU_1_nc_10.json"
+        },
+        "io_state_merge_data":"./data/KC_A_io_state_merge.npy",
+        "io_state_merge_column":"./data/KC_A_io_state_merge_column.csv"
+    }
+}
