@@ -12,7 +12,8 @@
         "feature_value_file": "./data/station_KC_A_df_2018.csv",
         "bi_cluster_file": {
             "15": "./data/bi_cluster_GRU_1_nc_15.json",
-            "10": "./data/bi_cluster_GRU_1_nc_10.json"
+            "10": "./data/bi_cluster_GRU_1_nc_10.json",
+            "12": "./data/bi_cluster_GRU_1_nc_12.json"
         },
         "io_state_merge_data":"./data/KC_A_io_state_merge.npy",
         "io_state_merge_column":"./data/KC_A_io_state_merge_column.csv"

@@ -4,6 +4,8 @@ import json
 from app.DataService.DataService import DataService
 from flask import request
 
+import pandas as pd
+
 import os
 cwd = os.getcwd()
 print("Test root path", cwd)
@@ -97,6 +99,23 @@ def get_subgroup_stats():
     dif_type =  post_data['dif_type']
     results = dataService.get_subgroup_statistics(feature_scales = feature_scales, r_len = r_len, dif_type = dif_type)
     return json.dumps(results)
+
+
+
+@app.route('/scatter_plot_subgroup',  methods = ['POST'])
+def get_subgroup_scatter_plot():
+
+    post_data = json.loads(request.data.decode())
+    print('Get scatter_plot_subgroup values ',post_data)
+    # feature_scales, r_len, dif_type
+    feature_scales = post_data['feature_scales']
+    r_len = 50
+
+    # results = dataService.get_subgroup_scatter_plot(feature_scales = feature_scales, r_len = r_len)
+    # print("scatter_plot_subgroup", results)
+
+    df = pd.read_csv('./data/test_scatter_plot.csv');
+    return json.dumps(df.values.tolist())
 
 
 # @app.route('/getLegendConfiguration',  methods = ['POST'])

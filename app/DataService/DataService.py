@@ -91,6 +91,7 @@ class DataService:
 
     def get_bi_cluster(self,m_id, nc):
         bi_cluster_json = self.config[m_id]['bi_cluster_file'][str(nc)]
+        print("bi_cluster_json", bi_cluster_json)
         with open(bi_cluster_json, 'r') as input_file:
             return json.load(input_file)
 
@@ -161,7 +162,7 @@ class DataService:
         data_file = np.load(self.config[m_id]['io_state_merge_data'])
         data_column = pd.read_csv(self.config[m_id]['io_state_merge_column']).columns
         all_seq_df = pd.DataFrame(data_file, columns = data_column)
-        print(all_seq_df.shape, time.time() - start_time)
+        print("all_seq_df", all_seq_df.shape, time.time() - start_time)
         return all_seq_df
 
 
@@ -207,7 +208,7 @@ class DataService:
 
         if set(all_seq_df.columns) <= set(feature_scales) != True:
             print('Some feature not existed!')
-        output_df = all_seq_df.iloc[:, -100:]
+
         condition = None
         for i, f in enumerate(feature_scales):
             min_val, max_val = feature_scales[f][0] / r_len, feature_scales[f][1] / r_len
@@ -218,11 +219,20 @@ class DataService:
 
         if condition is None:
             return []
-        condition_output = output_df[condition]
+
+        all_sub_df = all_seq_df[condition]
+            #
+        # output_df = all_seq_df.iloc[:, 365: 365 + 100]
+        # condition_output = output_df[condition]
+
+        condition_output = all_sub_df.iloc[:, 365: 365 + 100]
         # hard code
         print(condition_output.shape, all_seq_df.shape)
+
         lim_n = 10000
-        sub_df = output_df[condition].sample(n = lim_n if lim_n < condition_output.shape[0] else condition_output.shape[0])
+
+        sub_df = condition_output.sample(n = lim_n if lim_n < condition_output.shape[0] else condition_output.shape[0])
+
         # sub_df = output_df[condition]
         sub_describe_df = sub_df.describe()
 
@@ -235,7 +245,7 @@ class DataService:
         for column in sub_df.columns:
             sub_stats = form_feature_stats_dict(sub_df, sub_describe_df, column=column)
 
-            all_se = output_df.sample(n = lim_n)[column]
+            all_se = all_seq_df.sample(n = lim_n)[column]
             # all_se = output_df[column]
             sub_se = sub_df[column]
             if sub_stats is not None:
@@ -255,6 +265,32 @@ class DataService:
         result = self.get_stats_of_subgroup_data_mulit_features(self.io_stats_df, feature_scales, r_len = r_len, dif_type = dif_type)
 
         return result
+    def get_subgroup_scatter_plot(self, feature_scales, r_len=50):
+        start_time = time.time()
+        all_seq_df = self.io_stats_df
+        if set(all_seq_df.columns) <= set(feature_scales) != True:
+            print('Some feature not existed!')
+
+        condition = None
+        for i, f in enumerate(feature_scales):
+            min_val, max_val = feature_scales[f][0] / r_len, feature_scales[f][1] / r_len
+            if i == 0:
+                condition = (all_seq_df[f] > min_val) & (all_seq_df[f] < max_val)
+            else:
+                condition = condition & (all_seq_df[f] > min_val) & (all_seq_df[f] < max_val)
+
+        if condition is None:
+            return []
+
+        all_sub_df = all_seq_df[condition]
+            #
+        # output_df = all_seq_df.iloc[:, 365: 365 + 100]
+        # condition_output = output_df[condition]
+
+        condition_output = all_sub_df.iloc[:, 365: 365 + 100]
+        # hard code
+        print(condition_output.shape, all_seq_df.shape)
+        print('timetime', time.time() - start_time)
     # def get_map(self, station_id):
     #     map_path = None
     #     for obj in self.station_config:
