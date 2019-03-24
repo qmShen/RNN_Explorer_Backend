@@ -91,7 +91,6 @@ class DataService:
 
     def get_bi_cluster(self,m_id, nc):
         bi_cluster_json = self.config[m_id]['bi_cluster_file'][str(nc)]
-        print("bi_cluster_json", bi_cluster_json)
         with open(bi_cluster_json, 'r') as input_file:
             return json.load(input_file)
 
@@ -143,6 +142,93 @@ class DataService:
             "gradient_stats_list": gradient_stats_list,
             "column": list(io_columns)
         }
+
+
+
+    def get_gradient_and_io_data_by_cluster(self, m_id, t_ids):
+        """
+        save units statistics to file, to accelerate reading data, filepath:./data/GRU_1-units_stats.json
+        :param m_id: model id
+        :return: no return, save data to file
+        """
+
+
+
+        def get_unit_clusters_gradient_by_pair(sequence_gradient, bi_cluster, output_u_id, input_u_id):
+            output_uids = bi_cluster[str(output_u_id)]['u_ids']
+            input_uids = bi_cluster[str(input_u_id)]['u_ids']
+            unit_gradient = sequence_gradient[:, :, -100:]
+
+            bi_cluster_gradient = np.absolute(unit_gradient[:, output_uids, :][:, :, input_uids])
+            bi_cluster_gradient_mean = bi_cluster_gradient.mean(axis=(1, 2))
+
+            return bi_cluster_gradient_mean
+
+        def get_all_unit_clutsers_gradient(sequence_gradient, bi_cluster):
+            cluster_ids = sorted([int(i) for i in bi_cluster])
+            gradient = np.ndarray((len(cluster_ids), len(cluster_ids), 23))
+            for output_id in cluster_ids:
+                for input_id in cluster_ids:
+                    gradient[output_id, input_id] = get_unit_clusters_gradient_by_pair(sequence_gradient,
+                                                                                       bi_cluster,
+                                                                                       output_id,
+                                                                                       input_id)
+            return gradient
+
+        def get_io_data(io_ndarray, bi_cluster):
+            unit_output = io_ndarray[:, 365: 365 + 100]
+            cluster_ids = sorted([int(i) for i in bi_cluster])
+            result_array = np.ndarray((len(cluster_ids), io_ndarray.shape[0], 4))
+            for cluster_id in cluster_ids:
+                u_ids = bi_cluster[str(cluster_id)]['u_ids']
+                cluster_output = unit_output[:, u_ids]
+
+                cluster_output_above = cluster_output.copy()
+                cluster_output_below = cluster_output.copy()
+                cluster_output_above[cluster_output_above < 0] = 0
+                cluster_output_below[cluster_output_below > 0] = 0
+                above_sum = cluster_output_above.sum(axis=1).reshape(cluster_output.shape[0], 1)
+                below_sum = cluster_output_below.sum(axis=1).reshape(cluster_output.shape[0], 1)
+                all_sum = np.absolute(cluster_output).sum(axis=1).reshape(cluster_output.shape[0], 1)
+                all_mean = np.absolute(cluster_output).mean(axis=1).reshape(cluster_output.shape[0], 1)
+
+                result_arr = np.concatenate((above_sum, below_sum, all_sum, all_mean), axis=1)
+                # sum of above 0, sum of below 0, sum of absolute, mean of absolute
+                result_array[cluster_id] = result_arr
+
+            return result_array
+
+
+        def read_gradient(t_id):
+            file_name = "{}{}.npy".format(gradient_folder, t_id);
+            arr = np.load(file_name)
+            return arr
+
+
+        cluster_json = self.get_bi_cluster(m_id, 15)
+        bi_cluster = cluster_json['bi_clusters']
+        gradient_folder = self.config[m_id]['gradient_folder']
+        input_output_folder = self.config[m_id]['input_out_folder']
+        io_columns = pd.read_csv("{}column.csv".format(input_output_folder)).columns
+
+        cluster_io_list = []
+        cluster_gradient_list = []
+
+        for t_id in t_ids:
+            io_data = np.load("{}{}.npy".format(input_output_folder, t_id))
+            sequence_gradient = read_gradient(t_id)
+            all_cluster_gradient = get_all_unit_clutsers_gradient(sequence_gradient, bi_cluster)
+            all_cluster_io = get_io_data(io_data, bi_cluster)
+            cluster_io_list.append(all_cluster_io.tolist())
+            cluster_gradient_list.append(all_cluster_gradient.tolist())
+
+
+
+        return {
+            "cluster_io_list": cluster_io_list,
+            "cluster_gradient_list": cluster_gradient_list,
+        }
+
 
     def get_feature_values(self, m_id, features):
 
