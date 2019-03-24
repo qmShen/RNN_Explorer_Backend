@@ -74,11 +74,7 @@ def get_stats_data():
 
 
 
-@app.route('/cell_input_output',  methods = ['POST'])
-def get_gradient_and_io():
-    post_data = json.loads(request.data.decode())
-    print('Get cell input out ',post_data)
-    return json.dumps(dataService.get_gradient_and_io_data(post_data['mid'],post_data['tid']))
+
 
 @app.route('/feature_values',  methods = ['POST'])
 def get_feature_values():
@@ -117,6 +113,21 @@ def get_subgroup_scatter_plot():
     df = pd.read_csv('./data/test_scatter_plot.csv');
     return json.dumps(df.values.tolist())
 
+
+# Sequence data
+@app.route('/cell_input_output',  methods = ['POST'])
+def get_gradient_and_io():
+    post_data = json.loads(request.data.decode())
+    print('Get cell input out ',post_data)
+    return json.dumps(dataService.get_gradient_and_io_data(post_data['mid'],post_data['tid']))
+
+
+@app.route('/sequence_cluster',  methods = ['POST'])
+def get_selected_sequence_cluster():
+    post_data = json.loads(request.data.decode())
+    print('Get selected sequence cluster ',post_data)
+    return json.dumps(dataService.get_gradient_and_io_data_by_cluster(post_data['mid'],post_data['tid']))
+    # return json.dumps(dataService.get_gradient_and_io_data(post_data['mid'],post_data['tid']))
 
 # @app.route('/getLegendConfiguration',  methods = ['POST'])
 # def get_legend_config():
