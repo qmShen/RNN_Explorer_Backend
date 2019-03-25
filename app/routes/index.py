@@ -110,7 +110,7 @@ def get_subgroup_scatter_plot():
     # results = dataService.get_subgroup_scatter_plot(feature_scales = feature_scales, r_len = r_len)
     # print("scatter_plot_subgroup", results)
 
-    df = pd.read_csv('./data/test_scatter_plot.csv');
+    df = pd.read_csv('./data/test_scatter_plot_wind3class.csv');
     return json.dumps(df.values.tolist())
 
 
