@@ -113,10 +113,12 @@ def get_subgroup_scatter_plot():
     # print("scatter_plot_subgroup", results)
 
     # df = pd.read_csv('./data/test_scatter_plot_wind3class.csv');
-    df = dataService.get_scatter_plot_by_sub_groups(sub_groups)
+    df , all_selected_features = dataService.get_scatter_plot_by_sub_groups(sub_groups)
     df.to_csv('temp.csv', index = False)
 
-    return json.dumps(df.values.tolist())
+    return json.dumps({
+        'data': df.values.tolist(),
+        'selected_timestamps': all_selected_features})
 
 
 # Sequence data

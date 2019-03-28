@@ -416,12 +416,16 @@ class DataService:
         group_configs = sub_groups
         unit_dfs = []
         identify_features = []
+        all_selected_features = []
         for i, feature_scales in enumerate(group_configs):
             sub_df = get_subgroup_scatter_plot(feature_scales, r_len=50)
 
             sub_df['sequence_time'] = sub_df['sequence_time'].astype(int, inplace=True)
             sub_df['unit_time'] = sub_df['unit_time'].astype(int, inplace=True)
             units_df = sub_df[sub_df['unit_time'] == sub_df['sequence_time']]
+
+            all_selected_features.append(units_df.iloc[:, -3:].values.tolist())
+
             n = 500 if units_df.shape[0]>500 else units_df.shape[0]
             units_df = units_df.sample(n = n)
             unit_dfs.append(units_df)
@@ -445,7 +449,7 @@ class DataService:
         df['sequence_time'] = identify_features[:, 1]
         df['_id'] = identify_features[:, 2]
 
-        return df
+        return df, all_selected_features
 
 
     # def get_map(self, station_id):
