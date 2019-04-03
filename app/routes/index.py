@@ -69,12 +69,9 @@ def get_stats_data():
     return json.dumps({
         'features': dataService.get_feature_stats(post_data['mid']),
         'units': dataService.get_units_stats(post_data['mid']),
-        'bicluster':dataService.get_bi_cluster(post_data['mid'],post_data['nc'])
+        'bicluster':dataService.get_bi_cluster(post_data['mid'],post_data['nc']),
+        'cluster': dataService.get_cluster(post_data['mid'])
     })
-
-
-
-
 
 @app.route('/feature_values',  methods = ['POST'])
 def get_feature_values():
@@ -125,7 +122,7 @@ def get_subgroup_scatter_plot():
 @app.route('/cell_input_output',  methods = ['POST'])
 def get_gradient_and_io():
     post_data = json.loads(request.data.decode())
-    print('Get cell input out ',post_data)
+    print('Get cell input out ', post_data)
     return json.dumps(dataService.get_gradient_and_io_data(post_data['mid'],post_data['tid']))
 
 

@@ -97,7 +97,10 @@ class DataService:
             return json.load(input_file)
 
 
-
+    def get_cluster(self, m_id, n_unit_cluster = 12, n_feature_cluster = 12):
+        cluster_file = self.config[m_id]['cluster_file'][str("{}_{}".format(n_unit_cluster, n_feature_cluster))]
+        with open(cluster_file, 'r') as input_file:
+            return json.load(input_file)
 
     def get_and_save_feature_stats(self, m_id):
         """
@@ -413,6 +416,22 @@ class DataService:
             df['class'] = df['class'].astype(int)
             return df
 
+        def return_unconnected_df(df, column='sequence_time', hour_gap=6):
+            time_series = df[column]
+            pd_indeces = []
+            for index, t in enumerate(time_series):
+                pd_i = time_series.index[index]
+                if index == 0:
+                    pd_indeces.append(pd_i)
+                    current_time = t
+                    continue
+
+                if (t - current_time) >= hour_gap * 3600:
+                    pd_indeces.append(pd_i)
+                    current_time = t
+            return df.iloc[pd_indeces]
+
+
         group_configs = sub_groups
         unit_dfs = []
         identify_features = []
@@ -425,13 +444,17 @@ class DataService:
             units_df = sub_df[sub_df['unit_time'] == sub_df['sequence_time']]
 
             all_selected_features.append(units_df.iloc[:, -3:].values.tolist())
+            units_df = units_df.sort_values(['sequence_time'])
+            units_df = units_df.reset_index(drop=True)
+            units_df = return_unconnected_df(units_df, column='sequence_time', hour_gap=6)
+
 
             n = 500 if units_df.shape[0]>500 else units_df.shape[0]
             units_df = units_df.sample(n = n)
             unit_dfs.append(units_df)
             identify_features.append(units_df.iloc[:, -3:].values)
 
-        print('Generate_sub_df')
+
 
         all_values = np.concatenate(tuple([sub_df.values[:, :100] for sub_df in unit_dfs]))
         identify_features = np.concatenate(tuple([i_df for i_df in identify_features]))
