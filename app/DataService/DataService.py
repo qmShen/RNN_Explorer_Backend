@@ -97,7 +97,7 @@ class DataService:
             return json.load(input_file)
 
 
-    def get_cluster(self, m_id, n_unit_cluster = 12, n_feature_cluster = 12):
+    def get_cluster(self, m_id, n_unit_cluster = 10, n_feature_cluster = 12):
         cluster_file = self.config[m_id]['cluster_file'][str("{}_{}".format(n_unit_cluster, n_feature_cluster))]
         with open(cluster_file, 'r') as input_file:
             return json.load(input_file)
@@ -157,35 +157,65 @@ class DataService:
         :return: no return, save data to file
         """
 
+        def get_cluster(m_id, n_unit_cluster=10, n_feature_cluster=12):
+            cluster_file = self.config[m_id]['cluster_file'][str("{}_{}".format(n_unit_cluster, n_feature_cluster))]
+            with open(cluster_file, 'r') as input_file:
+                return json.load(input_file)
 
+        def get_unit_clusters_gradient(sequence_gradient, cluster, output_u_id, input_u_id):
+            output_uids = cluster['unit_map'][str(output_u_id)]
+            input_uids = cluster['unit_map'][str(input_u_id)]
+            # hard code
+            update_input_ids = [265 + _id for _id in input_uids]
 
-        def get_unit_clusters_gradient_by_pair(sequence_gradient, bi_cluster, output_u_id, input_u_id):
-            output_uids = bi_cluster[str(output_u_id)]['u_ids']
-            input_uids = bi_cluster[str(input_u_id)]['u_ids']
-            unit_gradient = sequence_gradient[:, :, -100:]
+            # the gradient of previous unit
+            unit_cluster_gradient = np.absolute(sequence_gradient[:, output_uids, :][:, :, update_input_ids])
+            unit_cluster_gradient_mean = unit_cluster_gradient.mean(axis=(1, 2))
 
-            bi_cluster_gradient = np.absolute(unit_gradient[:, output_uids, :][:, :, input_uids])
-            bi_cluster_gradient_mean = bi_cluster_gradient.mean(axis=(1, 2))
+            return unit_cluster_gradient_mean
 
-            return bi_cluster_gradient_mean
+        def get_feature_clusters_gradient(sequence_gradient, cluster, output_u_id, input_f_id, feature_index_map):
 
-        def get_all_unit_clutsers_gradient(sequence_gradient, bi_cluster):
-            cluster_ids = sorted([int(i) for i in bi_cluster])
-            gradient = np.ndarray((len(cluster_ids), len(cluster_ids), 23))
-            for output_id in cluster_ids:
-                for input_id in cluster_ids:
-                    gradient[output_id, input_id] = get_unit_clusters_gradient_by_pair(sequence_gradient,
-                                                                                       bi_cluster,
-                                                                                       output_id,
-                                                                                       input_id)
-            return gradient
+            output_uids = cluster['unit_map'][str(output_u_id)]
+            input_fids = cluster['feature_map'][str(input_f_id)]
 
-        def get_io_data(io_ndarray, bi_cluster):
+            input_findeces = [feature_index_map[feature_name] for feature_name in input_fids]
+
+            # the gradient of current feature
+            feature_cluster_gradient = np.absolute(sequence_gradient[:, output_uids, :][:, :, input_findeces])
+            feature_cluster_gradient_mean = feature_cluster_gradient.mean(axis=(1, 2))
+
+            return feature_cluster_gradient_mean
+
+        def get_all_unit_clusters_gradient(sequence_gradient, cluster, feature_index_map):
+            u_cluster_ids = sorted([int(i) for i in list(cluster['unit_map'])])
+            f_cluster_ids = sorted([int(i) for i in list(cluster['feature_map'])])
+
+            unit_gradient = np.ndarray((len(u_cluster_ids), len(u_cluster_ids), sequence_gradient.shape[0]))
+            feature_gradient = np.ndarray((len(u_cluster_ids), len(f_cluster_ids), sequence_gradient.shape[0]))
+
+            for output_id in u_cluster_ids:
+                for input_id in u_cluster_ids:
+                    unit_cluster_gradient = get_unit_clusters_gradient(sequence_gradient, cluster, output_id, input_id)
+                    unit_gradient[output_id, input_id] = unit_cluster_gradient
+
+            for output_id in u_cluster_ids:
+                for input_id in f_cluster_ids:
+                    feature_cluster_gradient = get_feature_clusters_gradient(sequence_gradient, cluster,
+                                                                             output_id,
+                                                                             input_id, feature_index_map)
+                    feature_gradient[output_id, input_id] = feature_cluster_gradient
+
+            return unit_gradient, feature_gradient
+
+        def get_io_data(io_ndarray, cluster):
+            # hard code
             unit_output = io_ndarray[:, 365: 365 + 100]
-            cluster_ids = sorted([int(i) for i in bi_cluster])
+            cluster_ids = sorted([int(unit_cluster['uc_id']) for unit_cluster in cluster['unit_clusters']])
             result_array = np.ndarray((len(cluster_ids), io_ndarray.shape[0], 4))
+
             for cluster_id in cluster_ids:
-                u_ids = bi_cluster[str(cluster_id)]['u_ids']
+                u_ids = cluster['unit_map'][str(cluster_id)]
                 cluster_output = unit_output[:, u_ids]
 
                 cluster_output_above = cluster_output.copy()
@@ -203,18 +233,25 @@ class DataService:
 
             return result_array
 
-
         def read_gradient(t_id):
             file_name = "{}{}.npy".format(gradient_folder, t_id);
             arr = np.load(file_name)
             return arr
 
+        # cluster_json = self.get_bi_cluster(m_id, 15)
+        # bi_cluster = cluster_json['bi_clusters']
 
-        cluster_json = self.get_bi_cluster(m_id, 15)
-        bi_cluster = cluster_json['bi_clusters']
+        cluster_json = get_cluster(m_id)
+        cluster = cluster_json
+
         gradient_folder = self.config[m_id]['gradient_folder']
         input_output_folder = self.config[m_id]['input_out_folder']
+
         io_columns = pd.read_csv("{}column.csv".format(input_output_folder)).columns
+        feature_index_map = {}
+        # hard code
+        for _i, column in enumerate(list(io_columns[:265])):
+            feature_index_map[column] = _i
 
         cluster_io_list = []
         cluster_gradient_list = []
@@ -222,10 +259,13 @@ class DataService:
         for t_id in t_ids:
             io_data = np.load("{}{}.npy".format(input_output_folder, t_id))
             sequence_gradient = read_gradient(t_id)
-            all_cluster_gradient = get_all_unit_clutsers_gradient(sequence_gradient, bi_cluster)
-            all_cluster_io = get_io_data(io_data, bi_cluster)
+            all_cluster_gradient = get_all_unit_clusters_gradient(sequence_gradient,
+                                                                  cluster,
+                                                                  feature_index_map=feature_index_map)
+
+            all_cluster_io = get_io_data(io_data, cluster)
             cluster_io_list.append(all_cluster_io.tolist())
-            cluster_gradient_list.append(all_cluster_gradient.tolist())
+            cluster_gradient_list.append(all_cluster_gradient[0].tolist())
 
 
 
@@ -462,7 +502,7 @@ class DataService:
 
         print('Start generating TSNE plot', all_values.shape)
         start_time = time.time()
-        embedded = TSNE(n_components=2).fit_transform(all_values)
+        embedded = TSNE(n_components=2, perplexity = 20).fit_transform(all_values)
         print("Using time", time.time() - start_time);
 
         df = pd.DataFrame(embedded, columns=['x', 'y'])

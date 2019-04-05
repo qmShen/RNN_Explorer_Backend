@@ -17,7 +17,9 @@
             "12": "./data/bi_cluster_GRU_1_nc_12.json"
         },
         "cluster_file": {
-            "12_12": "./data/cluster/GRU_1_cluster_12_12_AG_KM.json"
+            "10_12": "./data/cluster/GRU_1_cluster_10_12_AG_KM.json",   
+            "12_12": "./data/cluster/GRU_1_cluster_12_12_AG_KM.json",
+            "15_15": "./data/cluster/GRU_1_cluster_15_15_AG_KM.json"
         },
         "io_state_merge_data":"./data/KC_A_io_state_merge.npy",
         "io_state_merge_column":"./data/KC_A_io_state_merge_column.csv"
