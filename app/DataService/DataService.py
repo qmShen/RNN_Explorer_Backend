@@ -97,7 +97,7 @@ class DataService:
             return json.load(input_file)
 
 
-    def get_cluster(self, m_id, n_unit_cluster = 10, n_feature_cluster = 12):
+    def get_cluster(self, m_id, n_unit_cluster = 12, n_feature_cluster = 15):
         cluster_file = self.config[m_id]['cluster_file'][str("{}_{}".format(n_unit_cluster, n_feature_cluster))]
         with open(cluster_file, 'r') as input_file:
             return json.load(input_file)
@@ -150,14 +150,14 @@ class DataService:
 
 
 
-    def get_gradient_and_io_data_by_cluster(self, m_id, t_ids):
+    def get_gradient_and_io_data_by_cluster(self, m_id, t_ids, n_unit_cluster=12, n_feature_cluster=15):
         """
         save units statistics to file, to accelerate reading data, filepath:./data/GRU_1-units_stats.json
         :param m_id: model id
         :return: no return, save data to file
         """
 
-        def get_cluster(m_id, n_unit_cluster=10, n_feature_cluster=12):
+        def get_cluster(m_id, n_unit_cluster=n_unit_cluster, n_feature_cluster=n_feature_cluster):
             cluster_file = self.config[m_id]['cluster_file'][str("{}_{}".format(n_unit_cluster, n_feature_cluster))]
             with open(cluster_file, 'r') as input_file:
                 return json.load(input_file)

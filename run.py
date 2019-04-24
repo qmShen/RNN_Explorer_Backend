@@ -7,7 +7,7 @@ import time
 # except:
 #     print("Some thing wrong!")
 
-app.run(use_reloader=True, debug=True, port = 9930)
+app.run(use_reloader=True, debug=False, port = 9930)
 
 
 # from app.DataService.DataService import DataService

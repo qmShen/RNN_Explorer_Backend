@@ -18,6 +18,8 @@ print('here')
 # def get_test_scatter_plot():
 #     print('here')
 #     return json.dumps('test_scatter_plot')
+n_unit_cluster = 12
+n_feature_cluster = 12
 
 @app.route('/')
 def index():
@@ -66,11 +68,13 @@ def get_feature_stats_data():
 def get_stats_data():
     post_data = json.loads(request.data.decode())
     print('Get all statistics',post_data)
+
+
     return json.dumps({
         'features': dataService.get_feature_stats(post_data['mid']),
         'units': dataService.get_units_stats(post_data['mid']),
         'bicluster':dataService.get_bi_cluster(post_data['mid'],post_data['nc']),
-        'cluster': dataService.get_cluster(post_data['mid'])
+        'cluster': dataService.get_cluster(post_data['mid'], n_unit_cluster = n_unit_cluster,  n_feature_cluster = n_feature_cluster)
     })
 
 @app.route('/feature_values',  methods = ['POST'])
@@ -130,7 +134,8 @@ def get_gradient_and_io():
 def get_selected_sequence_cluster():
     post_data = json.loads(request.data.decode())
     print('Get selected sequence cluster ',post_data)
-    return json.dumps(dataService.get_gradient_and_io_data_by_cluster(post_data['mid'],post_data['tid']))
+    return json.dumps(dataService.get_gradient_and_io_data_by_cluster(post_data['mid'],post_data['tid'],
+                      n_unit_cluster=n_unit_cluster, n_feature_cluster=n_feature_cluster ))
     # return json.dumps(dataService.get_gradient_and_io_data(post_data['mid'],post_data['tid']))
 
 # @app.route('/getLegendConfiguration',  methods = ['POST'])
