@@ -254,8 +254,8 @@ class DataService:
             feature_index_map[column] = _i
 
         cluster_io_list = []
-        cluster_gradient_list = []
-
+        unit_cluster_gradient_list = []
+        feature_cluster_gradient_list = []
         for t_id in t_ids:
             io_data = np.load("{}{}.npy".format(input_output_folder, t_id))
             sequence_gradient = read_gradient(t_id)
@@ -265,13 +265,14 @@ class DataService:
 
             all_cluster_io = get_io_data(io_data, cluster)
             cluster_io_list.append(all_cluster_io.tolist())
-            cluster_gradient_list.append(all_cluster_gradient[0].tolist())
-
+            unit_cluster_gradient_list.append(all_cluster_gradient[0].tolist())
+            feature_cluster_gradient_list.append(all_cluster_gradient[1].tolist())
 
 
         return {
             "cluster_io_list": cluster_io_list,
-            "cluster_gradient_list": cluster_gradient_list,
+            "unit_cluster_gradient_list": unit_cluster_gradient_list,
+            "feature_cluster_gradient_list": feature_cluster_gradient_list
         }
 
 

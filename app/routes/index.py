@@ -19,7 +19,7 @@ print('here')
 #     print('here')
 #     return json.dumps('test_scatter_plot')
 n_unit_cluster = 12
-n_feature_cluster = 12
+n_feature_cluster = 15
 
 @app.route('/')
 def index():
