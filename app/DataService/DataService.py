@@ -20,6 +20,9 @@ class DataService:
         self.client = MongoClient(HOST, PORT)
         self.config = self.read_config()
         self.io_stats_df = self.read_state_merge('GRU_1')
+        # ------------------timestamps-----------------
+
+
         """
         Hard code
         """
@@ -29,7 +32,8 @@ class DataService:
         #     return
         # self.config_path = configPath
         # self.init_config()
-
+        self.current_feature_gradient_to_end = None
+        self.current_m_id = None
 
     def read_config(self):
         with open('./config/config.json', 'r') as input_file:
@@ -275,9 +279,104 @@ class DataService:
             "feature_cluster_gradient_list": feature_cluster_gradient_list
         }
 
+    def get_feature_gradient_to_end(self, m_id, t_ids, n_unit_cluster=12, n_feature_cluster=15):
+        """
+        save units statistics to file, to accelerate reading data, filepath:./data/GRU_1-units_stats.json
+        :param m_id: model id
+        :return: no return, save data to file
+        """
+        def get_cluster(m_id, n_unit_cluster=n_unit_cluster, n_feature_cluster=n_feature_cluster):
+            cluster_file = self.config[m_id]['cluster_file'][str("{}_{}".format(n_unit_cluster, n_feature_cluster))]
+            with open(cluster_file, 'r') as input_file:
+                return json.load(input_file)
+
+
+        def get_feature_gradient_to_end(time_sequence, timestamps, feature_gradient, cluster, columns):
+            """
+            :return:[{
+                feature: PM25,
+                timestamp: 1515168000,
+                feature_gradient: 2dList,
+                feature_cluster_gradient: 2dList
+            }]
+            """
+
+            def get_cluster_gradient(feature_gradient, feature_index_clusters, feature_index):
+
+                clusters_gradient = None
+
+                for index, cluster in enumerate(feature_index_clusters):
+                    sub_gradient = feature_gradient[:, cluster]
+                    shape = sub_gradient.shape
+
+                    cluster_sum_gradient = np.mean(sub_gradient, axis=1).reshape((shape[0], 1))
+                    if clusters_gradient is None:
+                        clusters_gradient = cluster_sum_gradient
+                    else:
+                        clusters_gradient = np.concatenate((clusters_gradient, cluster_sum_gradient), axis=1)
+
+                return clusters_gradient
+
+
+            features = self.features_columns[-5:]
+
+            time_indices = [int((time_sequence[i] - timestamps[0]) / 3600) for i in range(len(time_sequence))]
+
+            selected_gradient = feature_gradient[:, time_indices, :, :]
+            feature_gradient_map = {}
+
+            feature_index = {}
+            for index, column in enumerate(columns):
+                feature_index[column] = index
+
+            feature_clusters = cluster['feature_clusters']
+            feature_index_clusters = []
+
+            for cluster in feature_clusters:
+                cluster['f_indices'] = [feature_index[i] for i in cluster['f_ids']]
+                feature_index_clusters.append(cluster['f_indices'])
+
+
+            for i in range(selected_gradient.shape[0]):
+                feature_gradient_map[features[i]] = []
+                for time_index in range(len(selected_gradient[i])):
+                    _gradient = np.absolute(selected_gradient[i][time_index])
+                    _group_gradient = get_cluster_gradient(_gradient, feature_index_clusters, feature_index)
+
+                    feature_gradient_map[features[i]].append({
+                        'feature': features[i],
+                        'timestamp': time_sequence[time_index],
+                        'feature_gradient': _gradient.tolist(),
+                        'feature_cluster_gradient': _group_gradient.tolist(),
+                        'feature_gradient_mean': _gradient.mean(axis = 1).tolist()
+                    })
+
+            return feature_gradient_map, feature_index_clusters
+
+        cluster_json = get_cluster(m_id)
+
+        feature_gradient, gradient_timestamps = self.read_feature_gradient_and_time_to_end(m_id)
+        feature_gradient_result, feature_cluster_list = get_feature_gradient_to_end(t_ids, gradient_timestamps, feature_gradient, cluster_json, self.features_columns)
+        print('m_id, t_ids, n_unit_cluster, n_feature_cluster', m_id, t_ids, n_unit_cluster, n_feature_cluster)
+        return {'feature_gradient_to_end':feature_gradient_result, 'cluster': feature_cluster_list}
+
+
+
+
+    def read_feature_gradient_and_time_to_end(self, m_id):
+        if self.current_m_id is not None and self.current_m_id == m_id:
+            return self.current_feature_gradient_to_end, self.current_gradient_time
+        self.current_feature_gradient_to_end = np.load(self.config[m_id]['feature_gradient_to_end']['feature_gradient'])
+        self.current_m_id = m_id
+        self.current_gradient_time = np.load(self.config[m_id]['feature_gradient_to_end']['feature_gradient_timestamps'])
+        return self.current_feature_gradient_to_end, self.current_gradient_time
+
+
+
+
 
     def get_feature_values(self, m_id, features):
-
+        print('here22')
         def df2dict(df):
             index_2_dict = df.T.to_dict()
             return [index_2_dict[index] for index in index_2_dict]
@@ -293,11 +392,13 @@ class DataService:
         start_time = time.time()
         data_file = np.load(self.config[m_id]['io_state_merge_data'])
         data_column = pd.read_csv(self.config[m_id]['io_state_merge_column']).columns
+        """
+        Hard code
+        """
+        self.features_columns = data_column[:265]
         all_seq_df = pd.DataFrame(data_file, columns = data_column)
         print("all_seq_df", all_seq_df.shape, time.time() - start_time)
         return all_seq_df
-
-
 
     # ------------------------------------------------------------------#
     def get_stats_of_subgroup_data_mulit_features(self, all_seq_df, feature_scales, r_len=50, dif_type='ks'):
@@ -516,78 +617,7 @@ class DataService:
         return df, all_selected_features
 
 
-    # def get_map(self, station_id):
-    #     map_path = None
-    #     for obj in self.station_config:
-    #         if obj['StationId'] == station_id:
-    #             map_path = obj['StationMap']
-    #
-    #     if map_path == None:
-    #         print('No station_id', station_id, 'is found')
-    #         return None
-    #
-    #     with open(map_path, 'r') as map_file:
-    #         map = json.load(map_file)
-    #         map['stationId'] = station_id
-    #         return map
-    #
-    # def get_legend_config(self, station_id):
-    #     config_path = None
-    #     for obj in self.station_config:
-    #         if obj['StationId'] == station_id:
-    #             config_path = obj['LegendConfig']
-    #
-    #     if config_path == None:
-    #         print('No station_id', station_id, 'is found')
-    #         return None
-    #
-    #     with open(config_path, 'r') as map_file:
-    #         legend_config = json.load(map_file)
-    #         return {
-    #             'stationId': station_id,
-    #             'legendConfig': legend_config}
-    #
-    # def get_recent_records_single_collection(self, c_name, start, time_range):
-    #     collection = self.db[c_name] # people_activity / posts
-    #     num = 0
-    #     recent_arr = []
-    #     start_time = time.time()
-    #     for record in collection.find({
-    #         'time_stamp':{
-    #             '$gte': start,
-    #             '$lt': (start + time_range)
-    #         }
-    #     }).sort('time_stamp', pymongo.ASCENDING):
-    #         if "_id" in record:
-    #             del record['_id']
-    #         if "_id" in record:
-    #             del record['map_data']
-    #         recent_arr.append(record)
-    #
-    #     return recent_arr
-    #
-    # def get_recent_records(self, start, time_range):
-    #     people_activity = self.get_recent_records_single_collection('people_activity', start, time_range)
-    #     ticket_record = self.get_recent_records_single_collection('tickets_ADM', start, time_range)
-    #
-    #     return {
-    #         'people_activity': people_activity,
-    #         'ticket_record': ticket_record
-    #     }
-    #
-    #
-    # def get_people_count(self, day, ttt):
-    #     """
-    #     This function is used to retrieve the people count collection from MongoDB.
-    #     Created by Qing Du (q.du@ust.hk)
-    #     """
-    #     collection = self.db['people_count']
-    #     max_count = collection.find().sort('count', pymongo.DESCENDING).limit(1)[0]['count']
-    #     result = {}
-    #     result['max_count'] = max_count
-    #     for record in collection.find({'day': day, 'time': ttt}):
-    #         result[record['station_ID']] = record['count']
-    #     return result
+
 
     def get_temporal_data(self):
         with open('./data/PM25_2018.json', 'r') as input_file:

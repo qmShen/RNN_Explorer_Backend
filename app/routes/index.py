@@ -11,7 +11,7 @@ cwd = os.getcwd()
 print("Test root path", cwd)
 
 dataService = DataService('config.txt')
-print('here')
+
 
 
 # @app.route('/testscatterplot')
@@ -137,6 +137,15 @@ def get_selected_sequence_cluster():
     return json.dumps(dataService.get_gradient_and_io_data_by_cluster(post_data['mid'],post_data['tid'],
                       n_unit_cluster=n_unit_cluster, n_feature_cluster=n_feature_cluster ))
     # return json.dumps(dataService.get_gradient_and_io_data(post_data['mid'],post_data['tid']))
+
+@app.route('/feature_gradient_cluster_to_end',  methods = ['POST'])
+def get_feature_gradient_sequence_cluster_to_end():
+
+    post_data = json.loads(request.data.decode())
+    print('Get selected sequence cluster ',post_data)
+    return json.dumps(dataService.get_feature_gradient_to_end(post_data['mid'], post_data['tid'],
+                      n_unit_cluster=n_unit_cluster, n_feature_cluster=n_feature_cluster ))
+
 
 # @app.route('/getLegendConfiguration',  methods = ['POST'])
 # def get_legend_config():

@@ -11,6 +11,7 @@
         "gradient_folder": "./data/gradient_GRU_1/",
         "input_out_folder": "./data/input_out_GRU_1/",
         "feature_value_file": "./data/station_KC_A_df_2018.csv",
+        "feature_columns": "./data/feature_gradient_to_end/feature_columns.csv",
         "bi_cluster_file": {
             "15": "./data/bi_cluster_GRU_1_nc_15.json",
             "10": "./data/bi_cluster_GRU_1_nc_10.json",
@@ -25,6 +26,10 @@
             "15_15": "./data/cluster/GRU_1_cluster_15_15_AG_KM.json"
         },
         "io_state_merge_data":"./data/KC_A_io_state_merge.npy",
-        "io_state_merge_column":"./data/KC_A_io_state_merge_column.csv"
+        "io_state_merge_column":"./data/KC_A_io_state_merge_column.csv",
+        "feature_gradient_to_end": {
+            "feature_gradient_timestamps": "./data/feature_gradient_to_end/timestamps.npy",
+            "feature_gradient": "./data/feature_gradient_to_end/feature_gradient_to_end.npy"
+        }
     }
 }
