@@ -31,5 +31,6 @@
             "feature_gradient_timestamps": "./data/feature_gradient_to_end/timestamps.npy",
             "feature_gradient": "./data/feature_gradient_to_end/feature_gradient_to_end.npy"
         }
-    }
+    },
+    "observation_feature":  "./data/example/data_2018.csv"
 }

@@ -15,11 +15,13 @@ DB = 'XRNN'
 
 class DataService:
     def __init__(self, configPath):
-        pass
 
+        print('start')
         self.client = MongoClient(HOST, PORT)
         self.config = self.read_config()
         self.io_stats_df = self.read_state_merge('GRU_1')
+        self.observation_feature = pd.read_csv(self.config['observation_feature'])
+        print('Done@ ', self.observation_feature.shape)
         # ------------------timestamps-----------------
 
 
@@ -290,6 +292,16 @@ class DataService:
             with open(cluster_file, 'r') as input_file:
                 return json.load(input_file)
 
+        def get_observation_features(t_ids):
+            data_array = []
+            for tid in t_ids:
+                time_list = [tid - (23 - i)*3600 for i in range(0, 24)]
+                feature_list = self.observation_feature[self.observation_feature['seconds'].isin(time_list)].values[:,-1]
+                data_array.append({
+                    'time_stamp': tid,
+                    'value': feature_list.tolist()
+                })
+            return data_array
 
         def get_feature_gradient_to_end(time_sequence, timestamps, feature_gradient, cluster, columns):
             """
@@ -357,8 +369,9 @@ class DataService:
 
         feature_gradient, gradient_timestamps = self.read_feature_gradient_and_time_to_end(m_id)
         feature_gradient_result, feature_cluster_list = get_feature_gradient_to_end(t_ids, gradient_timestamps, feature_gradient, cluster_json, self.features_columns)
+        feature_value = get_observation_features(t_ids)
         print('m_id, t_ids, n_unit_cluster, n_feature_cluster', m_id, t_ids, n_unit_cluster, n_feature_cluster)
-        return {'feature_gradient_to_end':feature_gradient_result, 'cluster': feature_cluster_list}
+        return {'feature_gradient_to_end':feature_gradient_result, 'cluster': feature_cluster_list, 'all_features': self.features_columns.tolist(), 'feature_value': feature_value}
 
 
 
@@ -371,12 +384,8 @@ class DataService:
         self.current_gradient_time = np.load(self.config[m_id]['feature_gradient_to_end']['feature_gradient_timestamps'])
         return self.current_feature_gradient_to_end, self.current_gradient_time
 
-
-
-
-
     def get_feature_values(self, m_id, features):
-        print('here22')
+
         def df2dict(df):
             index_2_dict = df.T.to_dict()
             return [index_2_dict[index] for index in index_2_dict]
@@ -615,8 +624,6 @@ class DataService:
         df['_id'] = identify_features[:, 2]
 
         return df, all_selected_features
-
-
 
 
     def get_temporal_data(self):
