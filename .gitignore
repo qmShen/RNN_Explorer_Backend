@@ -13,6 +13,6 @@ MANIFEST
 # osm file
 *.osm
 
-config/
+# config/
 data/
 data
