@@ -296,7 +296,7 @@ class DataService:
             data_array = []
             for tid in t_ids:
                 time_list = [tid - (23 - i)*3600 for i in range(0, 24)]
-                feature_list = self.observation_feature[self.observation_feature['seconds'].isin(time_list)].values[:,-1]
+                feature_list = self.observation_feature[self.observation_feature['seconds'].isin(time_list)].values[:,:-1]
                 data_array.append({
                     'time_stamp': tid,
                     'value': feature_list.tolist()

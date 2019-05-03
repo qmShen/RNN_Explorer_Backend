@@ -28,6 +28,7 @@ def index():
 
 @app.route('/test')
 def getStationConfig():
+    print('testx')
     return json.dumps("test")
 
 @app.route('/test2')
