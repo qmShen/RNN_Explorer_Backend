@@ -625,6 +625,95 @@ class DataService:
 
         return df, all_selected_features
 
+    def get_scatter_plot_by_sub_groups_sequence_pattern(self, sub_groups):
+        print('sequence')
+        def get_subgroup_scatter_plot(feature_scales, r_len=50):
+            start_time = time.time()
+            all_seq_df = self.io_stats_df
+            if set(all_seq_df.columns) <= set(feature_scales) != True:
+                print('Some feature not existed!')
+
+            condition = None
+            for i, f in enumerate(feature_scales):
+                min_val, max_val = feature_scales[f][0] / r_len, feature_scales[f][1] / r_len
+                if i == 0:
+                    condition = (all_seq_df[f] > min_val) & (all_seq_df[f] < max_val)
+                else:
+                    condition = condition & (all_seq_df[f] > min_val) & (all_seq_df[f] < max_val)
+
+            if condition is None:
+                return []
+            all_sub_df = all_seq_df[condition]
+            condition_output = all_sub_df.iloc[:, 365:]
+
+            return condition_output
+
+        def set_class(df, class_range):
+            _sum_class = 0
+            for i, group_size in enumerate(class_range):
+                df.loc[(df.index < _sum_class + group_size) & (df.index >= _sum_class), 'class'] = i
+                _sum_class += group_size
+            df['class'] = df['class'].astype(int)
+            return df
+
+        def return_unconnected_df(df, column='sequence_time', hour_gap=6):
+            time_series = df[column]
+            pd_indeces = []
+            for index, t in enumerate(time_series):
+                pd_i = time_series.index[index]
+                if index == 0:
+                    pd_indeces.append(pd_i)
+                    current_time = t
+                    continue
+
+                if (t - current_time) >= hour_gap * 3600:
+                    pd_indeces.append(pd_i)
+                    current_time = t
+            return df.iloc[pd_indeces]
+
+
+        group_configs = sub_groups
+        unit_dfs = []
+        identify_features = []
+        all_selected_features = []
+        for i, feature_scales in enumerate(group_configs):
+            sub_df = get_subgroup_scatter_plot(feature_scales, r_len=50)
+
+            sub_df['sequence_time'] = sub_df['sequence_time'].astype(int, inplace=True)
+            sub_df['unit_time'] = sub_df['unit_time'].astype(int, inplace=True)
+            units_df = sub_df[sub_df['unit_time'] == sub_df['sequence_time']]
+
+            all_selected_features.append(units_df.iloc[:, -3:].values.tolist())
+            units_df = units_df.sort_values(['sequence_time'])
+            units_df = units_df.reset_index(drop=True)
+            units_df = return_unconnected_df(units_df, column='sequence_time', hour_gap=6)
+
+
+            n = 500 if units_df.shape[0]>500 else units_df.shape[0]
+            units_df = units_df.sample(n = n)
+            unit_dfs.append(units_df)
+            identify_features.append(units_df.iloc[:, -3:].values)
+
+
+
+        all_values = np.concatenate(tuple([sub_df.values[:, :100] for sub_df in unit_dfs]))
+        identify_features = np.concatenate(tuple([i_df for i_df in identify_features]))
+        class_range = [sub_df.shape[0] for sub_df in unit_dfs]
+
+        print('Start generating TSNE plot', all_values.shape)
+        start_time = time.time()
+        embedded = TSNE(n_components=2, perplexity = 20).fit_transform(all_values)
+        print("Using time", time.time() - start_time);
+
+        df = pd.DataFrame(embedded, columns=['x', 'y'])
+
+        df = set_class(df, class_range)
+        df['unit_time'] = identify_features[:, 0]
+        df['sequence_time'] = identify_features[:, 1]
+        df['_id'] = identify_features[:, 2]
+
+        return df, all_selected_features
+
 
     def get_temporal_data(self):
         with open('./data/PM25_2018.json', 'r') as input_file:
