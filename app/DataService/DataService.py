@@ -720,8 +720,13 @@ class DataService:
         return df, all_selected_features
 
 
+    # def get_temporal_data(self):
+    #     with open('./data/PM25_2018.json', 'r') as input_file:
+    #         data = json.load(input_file)
+    #         return json.dumps(data)
+
     def get_temporal_data(self):
-        with open('./data/PM25_2018.json', 'r') as input_file:
+        with open('./data/sequence_cluster_PM25.json', 'r') as input_file:
             data = json.load(input_file)
             return json.dumps(data)
 
