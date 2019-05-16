@@ -626,6 +626,11 @@ class DataService:
         return df, all_selected_features
 
     def get_scatter_plot_by_sub_groups_sequence_pattern(self, sub_groups):
+        """
+        Currenly
+        :param sub_groups:
+        :return:
+        """
         print('sequence')
         def get_subgroup_scatter_plot(feature_scales, r_len=50):
             start_time = time.time()
