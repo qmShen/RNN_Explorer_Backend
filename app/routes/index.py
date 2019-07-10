@@ -83,8 +83,24 @@ def get_feature_values():
 
     post_data = json.loads(request.data.decode())
     print('Get feature values ',post_data)
-    dicts = dataService.get_feature_values(post_data['mid'],post_data['features'])
+    if 'features' not in post_data:
+        dicts = dataService.get_feature_values(post_data['mid'])
+    else:
+        dicts = dataService.get_feature_values(post_data['mid'],post_data['features'])
     return json.dumps(dicts)
+
+
+@app.route('/feature_values_scaled',  methods = ['POST'])
+def get_feature_values_scaled():
+    post_data = json.loads(request.data.decode())
+    print('Get feature values ', post_data)
+    if 'features' not in post_data:
+        dicts = dataService.get_feature_values_scaled()
+    else:
+        dicts = dataService.get_feature_values_scaled(post_data['features'])
+    return json.dumps(dicts)
+
+
 
 @app.route('/subgroup_stats',  methods = ['POST'])
 def get_subgroup_stats():

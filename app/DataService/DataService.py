@@ -331,7 +331,7 @@ class DataService:
 
 
             features = self.features_columns[-5:]
-
+            print('features_sss_____________', features)
             time_indices = [int((time_sequence[i] - timestamps[0]) / 3600) for i in range(len(time_sequence))]
 
             selected_gradient = feature_gradient[:, time_indices, :, :]
@@ -384,7 +384,8 @@ class DataService:
         self.current_gradient_time = np.load(self.config[m_id]['feature_gradient_to_end']['feature_gradient_timestamps'])
         return self.current_feature_gradient_to_end, self.current_gradient_time
 
-    def get_feature_values(self, m_id, features):
+    def get_feature_values(self, m_id, features = None):
+        print('---------------features---------------', features)
 
         def df2dict(df):
             index_2_dict = df.T.to_dict()
@@ -393,9 +394,26 @@ class DataService:
 
         feature_values_csv = self.config[m_id]['feature_value_file']
         df = pd.read_csv(feature_values_csv)
-        sub_df = df[features + ['time','seconds']]
+
+        sub_df = df[features + ['time','seconds']] if features is not None else df
         dict_list = df2dict(sub_df)
         return dict_list
+
+    def get_feature_values_scaled(self, features = None):
+        print('---------------features---------------', features)
+
+        def df2dict(df):
+            index_2_dict = df.T.to_dict()
+            return [index_2_dict[index] for index in index_2_dict]
+
+
+        feature_values_csv = self.config['observation_feature']
+        df = pd.read_csv(feature_values_csv)
+
+        sub_df = df[features + ['time', 'seconds']] if features is not None else df
+        dict_list = df2dict(sub_df)
+        return dict_list
+
 
     def read_state_merge(self, m_id):
         start_time = time.time()
