@@ -37,7 +37,7 @@ def getStationConfig2():
 
 @app.route('/testscatterplot')
 def get_test_scatter_plot():
-    with open('./data/test_scatter_plot.json','r') as input_file:
+    with open('./data/test_scatter_plot.json', 'r') as input_file:
         data = json.load(input_file)
         return json.dumps(data)
 
@@ -171,6 +171,11 @@ def get_feature_gradient_sequence_cluster_to_end():
 #     config = dataService.get_legend_config(station_id)
 #     return json.dumps(config)
 
+@app.route('/input_feature_gradient_statistics',  methods = ['POST'])
+def get_input_feature_gradient_statistics():
 
+    post_data = json.loads(request.data.decode())
+    print('Get selected sequence cluster ', post_data)
+    return json.dumps(dataService.get_feature_gradient_statistics(post_data['mid'], post_data['target_feature']))
 if __name__ == '__main__':
     pass

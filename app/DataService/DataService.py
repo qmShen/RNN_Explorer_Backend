@@ -36,7 +36,9 @@ class DataService:
         # self.init_config()
         self.current_feature_gradient_to_end = None
         self.current_m_id = None
+        self.statistics_name = ['min', 'max', 'mean', 'std', '25', '50', '75']
 
+        self.test()
     def read_config(self):
         with open('./config/config.json', 'r') as input_file:
             config_json = json.load(input_file)
@@ -754,6 +756,48 @@ class DataService:
             return json.dumps(data)
 
     # def get_distribution(self, c_name):
+
+    def get_feature_gradient_statistics(self, m_id, target_feature):
+        """
+
+        :param m_id: the id of model
+        :param target_feature: the prediction feature name , one of ['min', 'max', 'mean', 'std', '25', '50', '75']
+        :return: {
+                    'statistics_name': ['min', 'max', 'mean', 'std', '25', '50', '75']，
+                    'temporal_statistics': feature_gradient
+                    }
+                The feature gradient(temporal_statistics)is 5 * 265 * 24 * 7,
+                indicates the target features, input features, timestamp, statistics name
+        """
+        input_feature_gradient_data_path = self.config[m_id]['result_gradient_statistics']
+        input_feature_gradient = np.load(input_feature_gradient_data_path)
+        input_features = list(self.features_columns)
+        target_features = list(self.features_columns[-5:])
+        statistics_name = self.statistics_name
+        def get_json_gradient_importance(feature, result_gradient, features_columns, target_columns, statistics_name):
+            feature_index = target_columns.index(feature)
+            features_gradient = result_gradient[feature_index]
+            feature_statics_object = []
+            for feature_id, feature in enumerate(features_columns):
+                feature_gradient = features_gradient[feature_id]
+                feature_statics_object.append({
+                    'feature_name': feature,
+                    'temporal_statistics': feature_gradient.tolist()
+                })
+
+            return {
+                'statistics_name': statistics_name,
+                'feature_statics': feature_statics_object
+            }
+
+        result = get_json_gradient_importance(target_feature, input_feature_gradient, input_features, target_features, statistics_name)
+        return result
+
+
+    def test(self):
+        return
+        self.get_feature_gradient_statistics("GRU_1", "PM25")
+
 
 if __name__ == '__main__':
     dataService = DataService(None)
