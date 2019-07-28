@@ -418,6 +418,7 @@ class DataService:
 
 
     def read_state_merge(self, m_id):
+        print('read_state_merge')
         start_time = time.time()
         data_file = np.load(self.config[m_id]['io_state_merge_data'])
         data_column = pd.read_csv(self.config[m_id]['io_state_merge_column']).columns
@@ -548,8 +549,7 @@ class DataService:
 
         all_sub_df = all_seq_df[condition]
         #
-        # output_df = all_seq_df.iloc[:, 365: 365 + 100]
-        # condition_output = output_df[condition]
+
 
         condition_output = all_sub_df.iloc[:, 365: 365 + 100]
         # hard code
