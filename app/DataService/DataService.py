@@ -19,7 +19,7 @@ class DataService:
         print('start')
         self.client = MongoClient(HOST, PORT)
         self.config = self.read_config()
-        self.io_stats_df = self.read_state_merge('GRU_1')
+        # self.io_stats_df = self.read_state_merge('GRU_1')
         self.observation_feature = pd.read_csv(self.config['observation_feature'])
         print('Done@ ', self.observation_feature.shape)
         # ------------------timestamps-----------------
@@ -39,11 +39,27 @@ class DataService:
         self.statistics_name = ['min', 'max', 'mean', 'std', '25', '50', '75']
 
         self.test()
+
+    def read_model_list(self):
+        model_list = self.config['model_list']
+        return model_list
+
     def read_config(self):
-        with open('./config/config.json', 'r') as input_file:
+        with open('./config/test.json', 'r') as input_file:
             config_json = json.load(input_file)
             return config_json
 
+
+
+    def read_selected_model(self, mid):
+        print('Load io merge state!')
+        self.io_stats_df = self.read_state_merge(mid)
+
+
+
+
+
+    # -------------------------------update--------------------------------------------------------
     def get_units_stats(self, m_id, db = False):
         """
         Read units status, filepath:./data/GRU_1-units_stats.json
@@ -91,7 +107,7 @@ class DataService:
             stats_c_name = self.config[m_id]['feature_stats_collection']
             db_name = self.config[m_id]['database']
             collection = MongoClient('127.0.0.1', 27017)[db_name][stats_c_name]
-            stats_c_records = list(collection.find({},{'_id': 0}))
+            stats_c_records = list(collection.find({}, {'_id': 0}))
             return stats_c_records
         else:
             print('f')
@@ -105,7 +121,7 @@ class DataService:
             return json.load(input_file)
 
 
-    def get_cluster(self, m_id, n_unit_cluster = 12, n_feature_cluster = 15):
+    def get_cluster(self, m_id, n_unit_cluster = 10, n_feature_cluster = 12):
         cluster_file = self.config[m_id]['cluster_file'][str("{}_{}".format(n_unit_cluster, n_feature_cluster))]
         with open(cluster_file, 'r') as input_file:
             return json.load(input_file)
@@ -158,7 +174,7 @@ class DataService:
 
 
 
-    def get_gradient_and_io_data_by_cluster(self, m_id, t_ids, n_unit_cluster=12, n_feature_cluster=15):
+    def get_gradient_and_io_data_by_cluster(self, m_id, t_ids, n_unit_cluster=10, n_feature_cluster=12):
         """
         save units statistics to file, to accelerate reading data, filepath:./data/GRU_1-units_stats.json
         :param m_id: model id
@@ -283,8 +299,9 @@ class DataService:
             "feature_cluster_gradient_list": feature_cluster_gradient_list
         }
 
-    def get_feature_gradient_to_end(self, m_id, t_ids, n_unit_cluster=12, n_feature_cluster=15):
+    def get_feature_gradient_to_end(self, m_id, t_ids, n_unit_cluster=10, n_feature_cluster=12):
         """
+        !!!!! unit cluster and feature cluster is not fixed!
         save units statistics to file, to accelerate reading data, filepath:./data/GRU_1-units_stats.json
         :param m_id: model id
         :return: no return, save data to file
@@ -418,14 +435,19 @@ class DataService:
 
 
     def read_state_merge(self, m_id):
-        print('read_state_merge')
+        print('Read state merge')
         start_time = time.time()
         data_file = np.load(self.config[m_id]['io_state_merge_data'])
         data_column = pd.read_csv(self.config[m_id]['io_state_merge_column']).columns
         """
         Hard code
         """
-        self.features_columns = data_column[:265]
+        features_columns = []
+        for c in data_column:
+            if c == '0' or c == 0:
+                break
+            features_columns.append(c)
+        self.features_columns = features_columns
         all_seq_df = pd.DataFrame(data_file, columns = data_column)
         print("all_seq_df", all_seq_df.shape, time.time() - start_time)
         return all_seq_df
@@ -776,6 +798,7 @@ class DataService:
         statistics_name = self.statistics_name
         def get_json_gradient_importance(feature, result_gradient, features_columns, target_columns, statistics_name):
             feature_index = target_columns.index(feature)
+            print('feature_index', target_columns, feature_index)
             features_gradient = result_gradient[feature_index]
             feature_statics_object = []
             for feature_id, feature in enumerate(features_columns):

@@ -18,8 +18,8 @@ dataService = DataService('config.txt')
 # def get_test_scatter_plot():
 #     print('here')
 #     return json.dumps('test_scatter_plot')
-n_unit_cluster = 12
-n_feature_cluster = 15
+n_unit_cluster = 10
+n_feature_cluster = 12
 
 @app.route('/')
 def index():
@@ -34,6 +34,42 @@ def getStationConfig():
 @app.route('/test2')
 def getStationConfig2():
     return json.dumps("test2")
+
+
+@app.route('/model_list',  methods = ['POST'])
+def read_model_list():
+    print('Read Model List')
+    model_list = dataService.read_model_list()
+    return json.dumps(model_list)
+
+# load_selected_model
+
+
+@app.route('/load_selected_model',  methods = ['POST'])
+def read_selected_model():
+    post_data = json.loads(request.data.decode())
+    print('Read Selected Model', post_data)
+    dataService.read_selected_model(post_data['mid'])
+    return json.dumps({
+        'features': dataService.get_feature_stats(post_data['mid']),
+        'units': dataService.get_units_stats(post_data['mid']),
+        'cluster': dataService.get_cluster(post_data['mid'], n_unit_cluster=n_unit_cluster,
+                                           n_feature_cluster=n_feature_cluster)
+    })
+
+
+# ------------------------------------------------------------------------------------
+@app.route('/all_stats',  methods = ['POST'])
+def get_stats_data():
+    post_data = json.loads(request.data.decode())
+    print('Get all statistics', post_data)
+    return json.dumps({
+        'features': dataService.get_feature_stats(post_data['mid']),
+        'units': dataService.get_units_stats(post_data['mid']),
+        'cluster': dataService.get_cluster(post_data['mid'], n_unit_cluster = n_unit_cluster,  n_feature_cluster = n_feature_cluster)
+    })
+
+
 
 @app.route('/testscatterplot')
 def get_test_scatter_plot():
@@ -64,19 +100,6 @@ def get_feature_stats_data():
     print('Get feature statistics',post_data)
     return json.dumps(dataService.get_feature_stats(post_data['mid']))
 
-
-@app.route('/all_stats',  methods = ['POST'])
-def get_stats_data():
-    post_data = json.loads(request.data.decode())
-    print('Get all statistics',post_data)
-
-
-    return json.dumps({
-        'features': dataService.get_feature_stats(post_data['mid']),
-        'units': dataService.get_units_stats(post_data['mid']),
-        'bicluster':dataService.get_bi_cluster(post_data['mid'],post_data['nc']),
-        'cluster': dataService.get_cluster(post_data['mid'], n_unit_cluster = n_unit_cluster,  n_feature_cluster = n_feature_cluster)
-    })
 
 @app.route('/feature_values',  methods = ['POST'])
 def get_feature_values():
@@ -150,7 +173,7 @@ def get_gradient_and_io():
 @app.route('/sequence_cluster',  methods = ['POST'])
 def get_selected_sequence_cluster():
     post_data = json.loads(request.data.decode())
-    print('Get selected sequence cluster ',post_data)
+    print('Get selected sequence cluster ', post_data)
     return json.dumps(dataService.get_gradient_and_io_data_by_cluster(post_data['mid'],post_data['tid'],
                       n_unit_cluster=n_unit_cluster, n_feature_cluster=n_feature_cluster ))
     # return json.dumps(dataService.get_gradient_and_io_data(post_data['mid'],post_data['tid']))
@@ -161,7 +184,7 @@ def get_feature_gradient_sequence_cluster_to_end():
     post_data = json.loads(request.data.decode())
     print('Get selected sequence cluster ',post_data)
     return json.dumps(dataService.get_feature_gradient_to_end(post_data['mid'], post_data['tid'],
-                      n_unit_cluster=n_unit_cluster, n_feature_cluster=n_feature_cluster ))
+                      n_unit_cluster=n_unit_cluster, n_feature_cluster=n_feature_cluster))
 
 
 # @app.route('/getLegendConfiguration',  methods = ['POST'])
@@ -173,9 +196,9 @@ def get_feature_gradient_sequence_cluster_to_end():
 
 @app.route('/input_feature_gradient_statistics',  methods = ['POST'])
 def get_input_feature_gradient_statistics():
-
     post_data = json.loads(request.data.decode())
     print('Get selected sequence cluster ', post_data)
     return json.dumps(dataService.get_feature_gradient_statistics(post_data['mid'], post_data['target_feature']))
+
 if __name__ == '__main__':
     pass

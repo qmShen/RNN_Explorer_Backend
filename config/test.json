@@ -1,0 +1,27 @@
+{
+    "observation_feature": "./data/example/data_2018.csv",
+
+    "model_list": [{
+        "model_id": "KC_A_step_3_epoch_400_inputlen_24_output_dim_100_model_GRU_LOSS_MSE",
+        "model_name": "KC_A_GRU_1"
+    }],
+
+    "KC_A_step_3_epoch_400_inputlen_24_output_dim_100_model_GRU_LOSS_MSE": {
+        "database": "XRNN",
+        "feature_stats_collection": "stat_GRU_1_feature",
+        "unit_stats_collection": "stat_GRU_1_unit",
+
+
+        "model_id": "./data/format_data/KC_A_step_3_epoch_400_inputlen_24_output_dim_100_model_GRU_LOSS_MSE/KC_A_step_3_epoch_400_inputlen_24_output_dim_100_model_GRU_LOSS_MSE",
+        "feature_gradient_timestamps": "./data/format_data/KC_A_step_3_epoch_400_inputlen_24_output_dim_100_model_GRU_LOSS_MSE/gradient_timestamps.npy",
+        "model_name": "KC_A_GRU_1",
+        "result_gradient_statistics": "./data/format_data/KC_A_step_3_epoch_400_inputlen_24_output_dim_100_model_GRU_LOSS_MSE/input_feature_gradient_statistics.npy",
+        "ks_test": "./data/format_data/KC_A_step_3_epoch_400_inputlen_24_output_dim_100_model_GRU_LOSS_MSE/feature_unit_relation/KC_A_step_3_epoch_400_inputlen_24_output_dim_100_model_GRU_LOSS_MSE",
+        "io_state_merge_column": "./data/format_data/KC_A_step_3_epoch_400_inputlen_24_output_dim_100_model_GRU_LOSS_MSE/i_state_o_merge/i_state_o_columns.csv",
+        "cluster_file": {
+            "10_12": "./data/format_data/KC_A_step_3_epoch_400_inputlen_24_output_dim_100_model_GRU_LOSS_MSE/cluster/GRU_1_cluster_10_12_AG_KM.json"
+        },
+        "io_state_merge_data": "./data/format_data/KC_A_step_3_epoch_400_inputlen_24_output_dim_100_model_GRU_LOSS_MSE/i_state_o_merge/i_state_o.npy",
+        "feature_gradient": "./data/format_data/KC_A_step_3_epoch_400_inputlen_24_output_dim_100_model_GRU_LOSS_MSE/gradient_timestamps.npy"
+    }
+}
