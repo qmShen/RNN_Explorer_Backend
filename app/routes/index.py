@@ -50,15 +50,17 @@ def read_selected_model():
     post_data = json.loads(request.data.decode())
     print('Read Selected Model', post_data)
     dataService.read_selected_model(post_data['mid'])
+
+
     return json.dumps({
         'features': dataService.get_feature_stats(post_data['mid']),
         'units': dataService.get_units_stats(post_data['mid']),
-        'cluster': dataService.get_cluster(post_data['mid'], n_unit_cluster=n_unit_cluster,
-                                           n_feature_cluster=n_feature_cluster)
+        'cluster': dataService.get_cluster(post_data['mid'], n_unit_cluster=n_unit_cluster, n_feature_cluster=n_feature_cluster),
+
+
     })
 
 
-# ------------------------------------------------------------------------------------
 @app.route('/all_stats',  methods = ['POST'])
 def get_stats_data():
     post_data = json.loads(request.data.decode())
@@ -70,7 +72,18 @@ def get_stats_data():
     })
 
 
+@app.route('/get_gradient_projection',  methods = ['POST'])
+def get_gradient_projection():
+    post_data = json.loads(request.data.decode())
+    mid = post_data['mid']
+    target_feature = post_data['target_feature']
+    data = dataService.get_gradient_projection(mid, target_feature)
+    print('Get gradient projection', post_data)
+    return json.dumps(data)
 
+
+
+# ------------------------------------------------------------------------------------
 @app.route('/testscatterplot')
 def get_test_scatter_plot():
     with open('./data/test_scatter_plot.json', 'r') as input_file:

@@ -20,8 +20,8 @@ class DataService:
         self.client = MongoClient(HOST, PORT)
         self.config = self.read_config()
         # self.io_stats_df = self.read_state_merge('GRU_1')
-        self.observation_feature = pd.read_csv(self.config['observation_feature'])
-        print('Done@ ', self.observation_feature.shape)
+        # self.observation_feature = pd.read_csv(self.config['observation_feature'])
+
         # ------------------timestamps-----------------
 
 
@@ -54,8 +54,32 @@ class DataService:
     def read_selected_model(self, mid):
         print('Load io merge state!')
         self.io_stats_df = self.read_state_merge(mid)
+        print('ssss', self.config[mid]['observation']);
+        self.observation_feature = pd.read_csv(self.config[mid]['observation'])
 
 
+    # Get projection data
+
+    def get_gradient_projection(self, mid, target_feature):
+
+        columns = np.load(self.config[mid]['projection_columns'], allow_pickle=True)
+        projections = np.load(self.config[mid]['projection_data'], allow_pickle=True)
+
+        feature_index = 3
+
+        target_index = None
+        target_column = None
+        for index, column in enumerate(columns):
+            if column[feature_index] == target_feature:
+                target_column = column
+                target_index = index
+                break
+        if target_column is None:
+            print('No feature {} existed in the data'.format(target_feature))
+        df = pd.DataFrame(projections[target_index], columns=target_column)
+        print('projection_df', df.shape)
+        data_list = df.to_dict('index').values()
+        return list(data_list)
 
 
 
@@ -116,6 +140,12 @@ class DataService:
 
 
     def get_bi_cluster(self,m_id, nc):
+        """
+        Not used!
+        :param m_id:
+        :param nc:
+        :return:
+        """
         bi_cluster_json = self.config[m_id]['bi_cluster_file'][str(nc)]
         with open(bi_cluster_json, 'r') as input_file:
             return json.load(input_file)
@@ -350,7 +380,7 @@ class DataService:
 
 
             features = self.features_columns[-5:]
-            print('features_sss_____________', features)
+
             time_indices = [int((time_sequence[i] - timestamps[0]) / 3600) for i in range(len(time_sequence))]
 
             selected_gradient = feature_gradient[:, time_indices, :, :]
@@ -377,7 +407,7 @@ class DataService:
                     feature_gradient_map[features[i]].append({
                         'feature': features[i],
                         'timestamp': time_sequence[time_index],
-                        'feature_gradient': _gradient.tolist(),
+                        'feature_gradient': _gradient.T.tolist(),
                         'feature_cluster_gradient': _group_gradient.tolist(),
                         'feature_gradient_mean': _gradient.mean(axis = 1).tolist()
                     })
@@ -390,7 +420,8 @@ class DataService:
         feature_gradient_result, feature_cluster_list = get_feature_gradient_to_end(t_ids, gradient_timestamps, feature_gradient, cluster_json, self.features_columns)
         feature_value = get_observation_features(t_ids)
         print('m_id, t_ids, n_unit_cluster, n_feature_cluster', m_id, t_ids, n_unit_cluster, n_feature_cluster)
-        return {'feature_gradient_to_end':feature_gradient_result, 'cluster': feature_cluster_list, 'all_features': self.features_columns.tolist(), 'feature_value': feature_value}
+
+        return {'feature_gradient_to_end':feature_gradient_result, 'cluster': feature_cluster_list, 'all_features': self.features_columns, 'feature_value': feature_value}
 
 
 
@@ -398,14 +429,12 @@ class DataService:
     def read_feature_gradient_and_time_to_end(self, m_id):
         if self.current_m_id is not None and self.current_m_id == m_id:
             return self.current_feature_gradient_to_end, self.current_gradient_time
-        self.current_feature_gradient_to_end = np.load(self.config[m_id]['feature_gradient_to_end']['feature_gradient'])
+        self.current_feature_gradient_to_end = np.load(self.config[m_id]['feature_gradient_to_end'])
         self.current_m_id = m_id
-        self.current_gradient_time = np.load(self.config[m_id]['feature_gradient_to_end']['feature_gradient_timestamps'])
+        self.current_gradient_time = np.load(self.config[m_id]['feature_gradient_timestamps'])
         return self.current_feature_gradient_to_end, self.current_gradient_time
 
     def get_feature_values(self, m_id, features = None):
-        print('---------------features---------------', features)
-
         def df2dict(df):
             index_2_dict = df.T.to_dict()
             return [index_2_dict[index] for index in index_2_dict]
@@ -419,7 +448,6 @@ class DataService:
         return dict_list
 
     def get_feature_values_scaled(self, features = None):
-        print('---------------features---------------', features)
 
         def df2dict(df):
             index_2_dict = df.T.to_dict()
@@ -428,8 +456,8 @@ class DataService:
 
         feature_values_csv = self.config['observation_feature']
         df = pd.read_csv(feature_values_csv)
-
-        sub_df = df[features + ['time', 'seconds']] if features is not None else df
+        print(df.columns)
+        sub_df = df[features + ['seconds']] if features is not None else df
         dict_list = df2dict(sub_df)
         return dict_list
 
