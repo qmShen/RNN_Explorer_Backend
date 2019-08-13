@@ -66,7 +66,7 @@ class DataService:
         projections = np.load(self.config[mid]['projection_data'], allow_pickle=True)
 
         feature_index = 3
-
+        print('column', columns, target_feature)
         target_index = None
         target_column = None
         for index, column in enumerate(columns):
@@ -443,7 +443,7 @@ class DataService:
         feature_values_csv = self.config[m_id]['feature_value_file']
         df = pd.read_csv(feature_values_csv)
 
-        sub_df = df[features + ['time','seconds']] if features is not None else df
+        sub_df = df[features + ['time', 'seconds']] if features is not None else df
         dict_list = df2dict(sub_df)
         return dict_list
 
@@ -456,7 +456,7 @@ class DataService:
 
         feature_values_csv = self.config['observation_feature']
         df = pd.read_csv(feature_values_csv)
-        print(df.columns)
+
         sub_df = df[features + ['seconds']] if features is not None else df
         dict_list = df2dict(sub_df)
         return dict_list
@@ -599,8 +599,6 @@ class DataService:
 
         all_sub_df = all_seq_df[condition]
         #
-
-
         condition_output = all_sub_df.iloc[:, 365: 365 + 100]
         # hard code
         print(condition_output.shape, all_seq_df.shape)
