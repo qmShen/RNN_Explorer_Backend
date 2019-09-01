@@ -45,10 +45,13 @@ class DataService:
         return model_list
 
     def read_config(self):
-        with open('./config/test.json', 'r') as input_file:
+        # with open('./config/test.json', 'r') as input_file:
+        #     config_json = json.load(input_file)
+        #     return config_json
+
+        with open('./config/config_epoch.json', 'r') as input_file:
             config_json = json.load(input_file)
             return config_json
-
 
 
     def read_selected_model(self, mid):
@@ -397,7 +400,7 @@ class DataService:
                 cluster['f_indices'] = [feature_index[i] for i in cluster['f_ids']]
                 feature_index_clusters.append(cluster['f_indices'])
 
-
+            print('selected_gradient', selected_gradient.shape)
             for i in range(selected_gradient.shape[0]):
                 feature_gradient_map[features[i]] = []
                 for time_index in range(len(selected_gradient[i])):
@@ -841,6 +844,15 @@ class DataService:
 
         result = get_json_gradient_importance(target_feature, input_feature_gradient, input_features, target_features, statistics_name)
         return result
+
+    def get_region_sector(self, target_station):
+        print('region get dataservice')
+        station_path = self.config['KC_A']
+        with open(station_path, 'r') as input_file:
+            data = json.load(input_file)
+            return json.dumps(data)
+
+        pass
 
 
     def test(self):

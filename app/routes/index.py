@@ -213,5 +213,12 @@ def get_input_feature_gradient_statistics():
     print('Get selected sequence cluster ', post_data)
     return json.dumps(dataService.get_feature_gradient_statistics(post_data['mid'], post_data['target_feature']))
 
+
+# get_region_sector
+@app.route('/get_region_sector',  methods = ['POST'])
+def get_region_sector():
+    post_data = json.loads(request.data.decode())
+    print('Get region sector ', post_data)
+    return dataService.get_region_sector('wait')
 if __name__ == '__main__':
     pass
