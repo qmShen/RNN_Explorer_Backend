@@ -53,6 +53,9 @@ class DataService:
             config_json = json.load(input_file)
             return config_json
 
+        # with open('./config/test.json', 'r') as input_file:
+        #     config_json = json.load(input_file)
+        #     return config_json
 
     def read_selected_model(self, mid):
         print('Load io merge state!')
